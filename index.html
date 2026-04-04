@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Aplikasi Keuangan</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Firebase scripts for cross-device sync. Isi firebaseConfig di app.js -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <div class="app-shell">
+        <header class="app-header">
+            <div class="brand">
+                <img src="catis.jpg" alt="CATIS logo" class="brand-logo">
+                <div>
+                    <p class="eyebrow">Aplikasi Keuangan</p>
+                    <h1>CATIS</h1>
+                </div>
+            </div>
+            <p class="intro">Catat pemasukan, pengeluaran, lihat laporan, grafik, dan rekomendasi kondisi keuangan Anda.</p>
+        </header>
+
+        <main>
+            <section id="auth-section" class="screen-card">
+                <h2>Login / Register</h2>
+                <div class="form-row">
+                    <label>Email</label>
+                    <input type="email" id="username" autocomplete="email">
+                </div>
+                <div class="form-row">
+                    <label>Password</label>
+                    <input type="password" id="password" autocomplete="current-password">
+                </div>
+                <div class="button-row">
+                    <button id="login-btn" class="primary">Login</button>
+                    <button id="register-btn" class="secondary">Register</button>
+                </div>
+            </section>
+
+            <section id="home-section" class="screen-card hidden">
+                <div class="home-header">
+                    <div>
+                        <p class="subtitle">Halo,</p>
+                        <h2 id="home-username">Pengguna Baru</h2>
+                    </div>
+                    <div class="home-actions">
+                        <button id="logout-btn" class="ghost">Logout</button>
+                        <span class="home-badge">Beranda</span>
+                    </div>
+                </div>
+
+                <div class="home-summary-grid">
+                    <div class="home-card">
+                        <span class="label">Total Pendapatan</span>
+                        <strong id="home-total-income">Rp0</strong>
+                    </div>
+                    <div class="home-card danger">
+                        <span class="label">Total Pengeluaran</span>
+                        <strong id="home-total-expense">Rp0</strong>
+                    </div>
+                </div>
+
+                <div class="status-card">
+                    <div class="status-item">
+                        <span>Status Keuangan</span>
+                        <strong id="home-status">Seimbang</strong>
+                    </div>
+                    <p id="home-recommendation">Rekomendasi akan tampil setelah data transaksi ditambahkan.</p>
+                </div>
+
+                <div class="quick-actions">
+                    <button class="action-btn" id="quick-input-btn"><span>💰</span>Input</button>
+                    <button class="action-btn" id="quick-report-btn"><span>📄</span>Laporan</button>
+                    <button class="action-btn" id="quick-graph-btn"><span>📊</span>Grafik</button>
+                </div>
+
+                <div class="section-title">Transaksi Terakhir</div>
+                <div id="home-transaction-list" class="transaction-list">
+                    <div class="transaction-card empty-state">Belum ada transaksi. Mulai catat sekarang.</div>
+                </div>
+            </section>
+
+            <section id="app-section" class="screen-card hidden">
+                <div class="top-bar">
+                    <div class="top-bar-title">
+                        <div class="top-avatar">👤</div>
+                        <div>
+                            <p>Dashboard</p>
+                            <h2 id="welcome-title">Halo, Pengguna</h2>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="input-page" class="page">
+                    <div class="grid-2">
+                        <div class="card input-card">
+                            <h3>Input Transaksi</h3>
+                            <div class="form-row">
+                                <label>Jenis</label>
+                                <select id="transaction-type">
+                                    <option value="Pendapatan">Pendapatan</option>
+                                    <option value="Pengeluaran">Pengeluaran</option>
+                                </select>
+                            </div>
+                            <div class="form-row">
+                                <label>Jumlah (Rp)</label>
+                                <input type="text" id="amount" value="0" inputmode="decimal" autocomplete="off">
+                            </div>
+                            <div class="calc-grid" id="calc-pad"></div>
+                            <div class="form-row">
+                                <label>Catatan</label>
+                                <input type="text" id="note" placeholder="Contoh: Gaji bulanan">
+                            </div>
+                            <button id="save-btn">Simpan Transaksi</button>
+                        </div>
+                        <div class="card report-card">
+                            <h3>Ringkasan Cepat</h3>
+                            <div class="summary-row">
+                                <div class="summary-block">
+                                    <span>Total Pendapatan</span>
+                                    <strong id="total-income">Rp0</strong>
+                                </div>
+                                <div class="summary-block">
+                                    <span>Total Pengeluaran</span>
+                                    <strong id="total-expense">Rp0</strong>
+                                </div>
+                            </div>
+                            <div class="info-card">
+                                <p id="home-quick-status">Evaluasi: Seimbang</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="report-page" class="page hidden">
+                    <div class="card">
+                        <div class="report-actions">
+                            <div class="report-filter">
+                                <label for="month-filter">Filter Bulan</label>
+                                <select id="month-filter">
+                                    <option value="all">Semua Bulan</option>
+                                </select>
+                            </div>
+                            <div class="report-filter">
+                                <label for="search-transactions">Cari Transaksi</label>
+                                <input id="search-transactions" type="search" placeholder="Nama, jumlah, catatan..." autocomplete="off">
+                            </div>
+                            <button id="refresh-report-btn" class="secondary">Refresh</button>
+                            <button id="export-csv-btn" class="secondary">Unduh Excel</button>
+                        </div>
+                        <div class="table-wrapper">
+                            <table id="report-table">
+                                <thead>
+                                    <tr>
+                                        <th>Tanggal</th>
+                                        <th>Jenis</th>
+                                        <th>Jumlah</th>
+                                        <th>Catatan</th>
+                                        <th>Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="graph-page" class="page hidden">
+                    <div class="card evaluation-card">
+                        <h3>Grafik & Evaluasi</h3>
+                        <div class="summary-row">
+                            <div class="summary-block">
+                                <span>Total Pendapatan</span>
+                                <strong id="total-income-graph">Rp0</strong>
+                            </div>
+                            <div class="summary-block">
+                                <span>Total Pengeluaran</span>
+                                <strong id="total-expense-graph">Rp0</strong>
+                            </div>
+                        </div>
+                        <div class="report-filter" style="margin-bottom: 14px; min-width: 220px;">
+                            <label for="graph-month-filter">Filter Bulan</label>
+                            <select id="graph-month-filter">
+                                <option value="all">Semua Bulan</option>
+                            </select>
+                        </div>
+                        <div class="chart-card">
+                            <div class="bar-legend">
+                                <div class="bar-item"><span class="bar-label">Pendapatan</span><span id="income-value">Rp0</span></div>
+                                <div class="bar-item"><span class="bar-label">Pengeluaran</span><span id="expense-value">Rp0</span></div>
+                            </div>
+                            <div class="chart-bars">
+                                <div class="chart-bar-holder">
+                                    <div class="chart-bar" id="income-bar"></div>
+                                    <span>Pendapatan</span>
+                                </div>
+                                <div class="chart-bar-holder">
+                                    <div class="chart-bar" id="expense-bar"></div>
+                                    <span>Pengeluaran</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="evaluation-text">
+                            <h4 id="evaluation-title">Evaluasi: -</h4>
+                            <p id="recommendation-text">Rekomendasi akan muncul setelah data transaksi ditambahkan.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <nav class="bottom-nav">
+                    <button class="nav-btn active" data-page="input-page">Input</button>
+                    <button class="nav-btn" data-page="report-page">Laporan</button>
+                    <button class="nav-btn" data-page="graph-page">Grafik</button>
+                    <button class="nav-btn" data-page="home-section">Home</button>
+                </nav>
+            </section>
+        </main>
+        <div id="undo-toast" class="undo-toast hidden" role="status" aria-live="polite"></div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
